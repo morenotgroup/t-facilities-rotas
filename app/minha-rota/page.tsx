@@ -43,6 +43,9 @@ export default function MinhaRotaPage() {
   const [photoPreviewByItem, setPhotoPreviewByItem] = useState<
     Record<string, string | null>
   >({})
+  const [photoFileByItem, setPhotoFileByItem] = useState<
+    Record<string, File | null>
+  >({})
 
   // === 1. Carregar rota da API ===
   const carregarRota = async () => {
@@ -56,22 +59,27 @@ export default function MinhaRotaPage() {
       }
       const json = (await res.json()) as ApiResponse
       setData(json)
-      // limpa estados...
-  } catch (e: any) {
-    setError(e.message)
-    setData(null)
-  } finally {
-    setLoading(false)
-  }
-}
 
-  // Carrega automaticamente na primeira abertura
+      // Reset de estados quando a rota muda
+      setStatusByItem({})
+      setObsByItem({})
+      setExpandedItems({})
+      setPhotoPreviewByItem({})
+      setPhotoFileByItem({})
+    } catch (e: any) {
+      setError(e.message)
+      setData(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     carregarRota()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // === 2. Funções auxiliares de UI ===
+  // === 2. Auxiliares de UI ===
 
   const toggleExpand = (id: string) => {
     setExpandedItems((prev) => ({ ...prev, [id]: !prev[id] }))
@@ -80,20 +88,46 @@ export default function MinhaRotaPage() {
   const handlePhotoChange = (itemId: string, file?: File | null) => {
     if (!file) {
       setPhotoPreviewByItem((prev) => ({ ...prev, [itemId]: null }))
+      setPhotoFileByItem((prev) => ({ ...prev, [itemId]: null }))
       return
     }
     const url = URL.createObjectURL(file)
     setPhotoPreviewByItem((prev) => ({ ...prev, [itemId]: url }))
+    setPhotoFileByItem((prev) => ({ ...prev, [itemId]: file }))
   }
 
-  // === 3. Registrar limpeza (chama API /api/checkins) ===
-  //
-  // O fluxo é:
-  // - a colaboradora escolhe STATUS (Limpo / Pendente / Em andamento)
-  // - escreve alguma observação se precisar
-  // - clica em "Registrar limpeza"
-  // - isso faz um POST na API com email + ambiente + rota + status + obs
-  //
+  // === 3. Upload real da foto para Cloudinary ===
+
+  const uploadImageToCloudinary = async (file: File): Promise<string> => {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+
+    if (!cloudName || !uploadPreset) {
+      throw new Error('Cloudinary não está configurado corretamente.')
+    }
+
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('upload_preset', uploadPreset)
+
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      },
+    )
+
+    if (!res.ok) {
+      throw new Error('Erro ao enviar imagem para Cloudinary.')
+    }
+
+    const json = await res.json()
+    return json.secure_url as string
+  }
+
+  // === 4. Registrar limpeza (com foto opcional) ===
+
   const registrarLimpeza = async (
     itemId: string,
     ambienteId: string,
@@ -103,8 +137,15 @@ export default function MinhaRotaPage() {
 
     const status = statusByItem[itemId] || 'LIMPO'
     const observacoes = obsByItem[itemId] || ''
+    const file = photoFileByItem[itemId] || null
 
     try {
+      let fotoUrl: string | null = null
+
+      if (file) {
+        fotoUrl = await uploadImageToCloudinary(file)
+      }
+
       const res = await fetch('/api/checkins', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -114,7 +155,7 @@ export default function MinhaRotaPage() {
           rotaId: data.rota.id,
           status,
           observacoes,
-          fotoUrl: null, // na próxima fase vamos subir a foto real pro storage
+          fotoUrl,
         }),
       })
 
@@ -125,8 +166,10 @@ export default function MinhaRotaPage() {
 
       alert(`Limpeza registrada para ${ambienteNome}`)
 
-      // limpa observação só desse item
+      // Limpa campos do item
       setObsByItem((prev) => ({ ...prev, [itemId]: '' }))
+      setPhotoFileByItem((prev) => ({ ...prev, [itemId]: null }))
+      setPhotoPreviewByItem((prev) => ({ ...prev, [itemId]: null }))
     } catch (e: any) {
       alert(e.message)
     }
@@ -190,10 +233,10 @@ export default function MinhaRotaPage() {
         </section>
       )}
 
-      {/* Se tiver rota carregada */}
+      {/* Se tiver rota */}
       {rota && data && (
         <>
-          {/* Card com resumo da rota / colaborador */}
+          {/* Resumo da rota */}
           <section className="rounded-2xl border border-white/15 bg-white/10 p-4 text-xs text-slate-50 shadow-lg shadow-purple-900/40 backdrop-blur-xl">
             <div className="flex items-start justify-between gap-2">
               <div>
@@ -220,7 +263,7 @@ export default function MinhaRotaPage() {
             )}
           </section>
 
-          {/* Lista de ambientes da rota */}
+          {/* Lista de ambientes */}
           <section className="flex flex-col gap-3">
             {rota.itens.map((item) => {
               const ambiente = item.ambiente
@@ -233,7 +276,7 @@ export default function MinhaRotaPage() {
                   key={item.id}
                   className="group rounded-2xl border border-white/10 bg-white/8 p-3 text-xs text-slate-50 shadow-lg shadow-black/50 backdrop-blur-2xl transition hover:border-amber-300/40 hover:bg-white/12"
                 >
-                  {/* Cabeçalho do card */}
+                  {/* Cabeçalho */}
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="text-sm font-semibold">{ambiente.nome}</p>
@@ -333,10 +376,10 @@ export default function MinhaRotaPage() {
                         />
                       </div>
 
-                      {/* Upload de foto (apenas preview local por enquanto) */}
+                      {/* Upload de foto */}
                       <div className="space-y-1">
                         <p className="text-[11px] font-medium text-slate-100">
-                          Foto da limpeza ou ocorrência (demo)
+                          Foto da limpeza ou ocorrência (opcional)
                         </p>
                         <div className="flex items-center gap-2">
                           <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/20 bg-black/30 px-3 py-1.5 text-[11px] font-medium text-slate-100 shadow-inner shadow-black/50 hover:border-amber-300/60 hover:text-amber-100">
@@ -361,7 +404,6 @@ export default function MinhaRotaPage() {
                         </div>
                         {fotoPreview && (
                           <div className="mt-2 overflow-hidden rounded-2xl border border-white/20 bg-black/40">
-                            {/* preview simples */}
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={fotoPreview}
@@ -372,7 +414,7 @@ export default function MinhaRotaPage() {
                         )}
                       </div>
 
-                      {/* Botão de registrar limpeza */}
+                      {/* Botão de registrar */}
                       <button
                         type="button"
                         onClick={() =>
