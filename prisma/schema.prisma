@@ -28,12 +28,13 @@ model ColaboradorFacility {
   email      String   @unique
   ativo      Boolean  @default(true)
 
-  /// Função principal: 'LIMPEZA', 'COZINHA', 'RECEPCAO', 'GC', etc.
-  tipo       String?  
+  /// Função principal no time (LIMPEZA, COZINHA, RECEPCAO, GC, etc.)
+  tipo       String?
 
-  /// Se tem acesso completo (Moreno, eventualmente Bruno etc.)
+  /// Se tem acesso total à plataforma (Moreno, eventualmente Bruno)
   acessoFull Boolean  @default(false)
 
+  // Relações
   rotas     RotaDiaria[]
   checkins  CheckinLimpeza[]
 }
