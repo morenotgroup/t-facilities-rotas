@@ -23,16 +23,17 @@ model Ambiente {
 }
 
 model ColaboradorFacility {
-  id         String  @id @default(cuid())
+  id         String   @id @default(cuid())
   nome       String
-  email      String  @unique
-  ativo      Boolean @default(false)
+  email      String   @unique
+  ativo      Boolean  @default(true)
 
-  // novos campos ajudam na organização
-  perfil     String  @default("LIMPEZA") // LIMPEZA | COZINHA | RECEPCAO | GC
-  fullAccess Boolean @default(false)
+  /// Função principal: 'LIMPEZA', 'COZINHA', 'RECEPCAO', 'GC', etc.
+  tipo       String?  
 
-  // ...relacionamentos e outros campos existentes
+  /// Se tem acesso completo (Moreno, eventualmente Bruno etc.)
+  acessoFull Boolean  @default(false)
+
   rotas     RotaDiaria[]
   checkins  CheckinLimpeza[]
 }
