@@ -8,19 +8,45 @@ type SalaPageProps = {
 export default async function SalaStatusPage({ params }: SalaPageProps) {
   const { slug } = params
 
-  // Busca a sala pelo slugQr (ex: "backyard_209" ou "recepcao_sede")
-  const ambiente = await prisma.ambiente.findFirst({
-    where: { slugQr: slug },
-    include: {
-      checkins: {
-        orderBy: { dataHora: 'desc' },
-        take: 1,
-        include: {
-          colab: true,
+  let ambiente = null
+  let loadError: string | null = null
+
+  try {
+    ambiente = await prisma.ambiente.findFirst({
+      where: { slugQr: slug },
+      include: {
+        checkins: {
+          orderBy: { dataHora: 'desc' },
+          take: 1,
+          include: {
+            colab: true,
+          },
         },
       },
-    },
-  })
+    })
+  } catch (error) {
+    console.error('Erro em /sala/[slug]', error)
+    loadError = 'Erro interno ao carregar os dados desta sala.'
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex min-h-screen flex-col gap-4 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 p-4 pb-8">
+        <section className="mt-4 rounded-2xl border border-red-500/40 bg-red-500/15 p-4 text-sm text-red-50 shadow-lg shadow-red-900/60 backdrop-blur-xl">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-red-200">
+            Erro interno
+          </p>
+          <p className="mt-1 text-sm font-semibold">
+            Não foi possível carregar as informações desta sala.
+          </p>
+          <p className="mt-2 text-[11px] text-red-100/90">
+            Avise a equipe de Facilities ou Gente &amp; Cultura para verificarem o
+            sistema de rotas de limpeza.
+          </p>
+        </section>
+      </div>
+    )
+  }
 
   if (!ambiente) {
     return (
