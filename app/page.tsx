@@ -59,9 +59,8 @@ export default function HomePage() {
               Acessar como colaborador de Facilities
             </Link>
             <p className="mt-2 text-[10px] text-slate-400">
-              Na demo, você pode usar um e-mail configurado (ex:{" "}
-              <span className="font-mono">gc@agenciataj.com</span>) para simular o
-              colaborador de Facilities.
+              No dia a dia, cada colaborador de Facilities usa o próprio e-mail
+              corporativo para enxergar apenas a sua rota.
             </p>
           </div>
         </article>
@@ -98,7 +97,6 @@ export default function HomePage() {
           <div className="mt-4 flex-1" />
 
           <div className="mt-3 space-y-2">
-            {/* Link demo para uma sala específica */}
             <Link
               href="/sala/recepcao"
               className="inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-br from-sky-400 via-sky-500 to-blue-600 px-4 py-2.5 text-[11px] font-semibold text-slate-950 shadow-lg shadow-sky-500/40 transition group-hover:brightness-110"
@@ -106,12 +104,9 @@ export default function HomePage() {
               Ver exemplo de sala (Recepção)
             </Link>
             <p className="text-[10px] text-slate-400">
-              Na vida real, cada sala terá seu QR Code com um link no formato:{' '}
-              <span className="font-mono">
-                /sala/&lt;slug-da-sala&gt;
-              </span>{" "}
-              — por exemplo:{' '}
-              <span className="font-mono">/sala/sala-gc</span>,{' '}
+              Na prática, cada sala terá seu QR Code com link no formato{' '}
+              <span className="font-mono">/sala/&lt;slug-da-sala&gt;</span> — por
+              exemplo: <span className="font-mono">/sala/sala-gc</span>,{' '}
               <span className="font-mono">/sala/backyard-209</span>, etc.
             </p>
           </div>
@@ -141,7 +136,7 @@ export default function HomePage() {
 
           <ul className="mt-3 space-y-1 text-[11px] text-slate-300">
             <li>• Painel com problemas recentes reportados nas salas</li>
-            <li>• Lista de últimos check-ins realizados pela equipe</li>
+            <li>• Lista de últimos check-ins da equipe de Facilities</li>
             <li>• Cadastro e edição de ambientes (nome, andar, tipo, slug QR)</li>
             <li>• Base pronta para evoluir para permissões e login real</li>
           </ul>
@@ -161,40 +156,9 @@ export default function HomePage() {
             >
               Gerenciar ambientes e QR Codes
             </Link>
-            <p className="text-[10px] text-slate-400">
-              Em uma próxima fase, este card pode virar o “login” oficial da
-              liderança, conectado ao Google Workspace apenas para quem for
-              autorizado.
-            </p>
           </div>
         </article>
       </section>
-
-      {/* Rodapé explicativo para a demo */}
-      <footer className="mt-6 max-w-3xl rounded-2xl border border-white/10 bg-black/40 p-4 text-[11px] text-slate-300 shadow-[0_18px_60px_rgba(0,0,0,0.85)] backdrop-blur-2xl">
-        <p className="font-semibold text-slate-100">
-          Como apresentar amanhã para o sócio
-        </p>
-        <ol className="mt-2 list-decimal space-y-1 pl-4">
-          <li>
-            Começa nesta tela e explica rapidamente os três perfis: operação
-            (Facilities), experiência via QR (toda a casa) e gestão (liderança).
-          </li>
-          <li>
-            Clica em <span className="font-semibold">“Acessar como colaborador de Facilities”</span>
-            e mostra a rota, registro de limpeza e upload de foto.
-          </li>
-          <li>
-            Volta para a home, clica em <span className="font-semibold">“Ver exemplo de sala (Recepção)”</span>{" "}
-            e mostra a experiência de quem escaneia o QR Code.
-          </li>
-          <li>
-            Por fim, abre o <span className="font-semibold">Painel de Facilities</span> e o{" "}
-            <span className="font-semibold">Admin de ambientes</span>, mostrando que
-            existe uma visão de gestão e não só um app “operacional”.
-          </li>
-        </ol>
-      </footer>
     </main>
   )
 }
