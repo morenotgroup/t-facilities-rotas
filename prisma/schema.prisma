@@ -26,13 +26,15 @@ model ColaboradorFacility {
   id         String  @id @default(cuid())
   nome       String
   email      String  @unique
-  ativo      Boolean @default(true)
+  ativo      Boolean @default(false)
 
   // novos campos ajudam na organização
   perfil     String  @default("LIMPEZA") // LIMPEZA | COZINHA | RECEPCAO | GC
   fullAccess Boolean @default(false)
 
   // ...relacionamentos e outros campos existentes
+  rotas     RotaDiaria[]
+  checkins  CheckinLimpeza[]
 }
 
 model RotaDiaria {
