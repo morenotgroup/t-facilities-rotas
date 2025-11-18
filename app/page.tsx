@@ -1,79 +1,200 @@
-// app/page.tsx
 import Link from 'next/link'
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="flex h-full flex-col gap-4 p-4 pb-6 text-slate-50">
-      <section className="rounded-2xl border border-white/15 bg-white/10 p-4 text-sm shadow-lg shadow-purple-900/40 backdrop-blur-xl">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-amber-200">
-          Bem-vindo ao T Facilities
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 px-4 py-6 text-slate-50">
+      {/* Cabeçalho */}
+      <header className="mb-6">
+        <p className="text-[11px] uppercase tracking-[0.24em] text-amber-200">
+          T Facilities • Rotas de limpeza
         </p>
-        <p className="mt-1 text-sm font-semibold">
-          Rotas de Limpeza • Versão piloto
+        <h1 className="mt-1 text-2xl font-semibold">
+          Central de acesso ao app de Facilities
+        </h1>
+        <p className="mt-2 max-w-xl text-[12px] text-slate-300">
+          Aqui você visualiza, em um único lugar, os três jeitos de usar o sistema:
+          a visão do time de limpeza, a experiência via QR Code em cada sala e o
+          painel estratégico da liderança de Facilities.
         </p>
-        <p className="mt-1 text-[11px] text-slate-200">
-          Escolha como você quer acessar a plataforma:
-        </p>
+      </header>
+
+      {/* Grid de cards */}
+      <section className="grid gap-4 md:grid-cols-3">
+        {/* Card 1 – Colaborador de Facilities */}
+        <article className="group flex flex-col rounded-3xl border border-emerald-400/40 bg-white/10 p-4 shadow-[0_20px_70px_rgba(0,0,0,0.85)] backdrop-blur-3xl">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-emerald-200">
+                Perfil 1
+              </p>
+              <h2 className="text-sm font-semibold">
+                Time de Facilities (rota + check-in)
+              </h2>
+            </div>
+            <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-[10px] font-semibold text-emerald-50">
+              Operação
+            </span>
+          </div>
+
+          <p className="text-[12px] text-slate-200">
+            O colaborador de Facilities acessa a rota diária, vê a lista de salas
+            na ordem correta, registra cada limpeza, adiciona observações e pode
+            subir uma foto da sala ou da ocorrência.
+          </p>
+
+          <ul className="mt-3 space-y-1 text-[11px] text-slate-300">
+            <li>• Rota personalizada por colaborador</li>
+            <li>• Registro de status da sala (Limpo / Pendente / Em andamento)</li>
+            <li>• Observações de limpeza por ambiente</li>
+            <li>• Upload de foto da sala ou problema encontrado</li>
+          </ul>
+
+          <div className="mt-4 flex-1" />
+
+          <div className="mt-3">
+            <Link
+              href="/minha-rota"
+              className="inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 px-4 py-2.5 text-[11px] font-semibold text-slate-950 shadow-lg shadow-emerald-500/40 transition group-hover:brightness-110"
+            >
+              Acessar como colaborador de Facilities
+            </Link>
+            <p className="mt-2 text-[10px] text-slate-400">
+              Na demo, você pode usar um e-mail configurado (ex:{" "}
+              <span className="font-mono">gc@agenciataj.com</span>) para simular o
+              colaborador de Facilities.
+            </p>
+          </div>
+        </article>
+
+        {/* Card 2 – Colaborador qualquer (QR Code) */}
+        <article className="group flex flex-col rounded-3xl border border-sky-400/40 bg-white/10 p-4 shadow-[0_20px_70px_rgba(0,0,0,0.85)] backdrop-blur-3xl">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-sky-200">
+                Perfil 2
+              </p>
+              <h2 className="text-sm font-semibold">
+                Qualquer colaborador (QR na porta da sala)
+              </h2>
+            </div>
+            <span className="rounded-full bg-sky-500/20 px-3 py-1 text-[10px] font-semibold text-sky-50">
+              Experiência
+            </span>
+          </div>
+
+          <p className="text-[12px] text-slate-200">
+            Qualquer pessoa da casa aponta a câmera para o QR Code da sala e acessa
+            uma página enxuta com o status da limpeza e um formulário rápido de
+            feedback.
+          </p>
+
+          <ul className="mt-3 space-y-1 text-[11px] text-slate-300">
+            <li>• Status da última limpeza da sala</li>
+            <li>• Feedback rápido: “Tudo ok” ou “Tem problema”</li>
+            <li>• Campo de comentário para detalhar o problema</li>
+            <li>• Campo opcional de e-mail para retorno da equipe</li>
+          </ul>
+
+          <div className="mt-4 flex-1" />
+
+          <div className="mt-3 space-y-2">
+            {/* Link demo para uma sala específica */}
+            <Link
+              href="/sala/recepcao"
+              className="inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-br from-sky-400 via-sky-500 to-blue-600 px-4 py-2.5 text-[11px] font-semibold text-slate-950 shadow-lg shadow-sky-500/40 transition group-hover:brightness-110"
+            >
+              Ver exemplo de sala (Recepção)
+            </Link>
+            <p className="text-[10px] text-slate-400">
+              Na vida real, cada sala terá seu QR Code com um link no formato:{' '}
+              <span className="font-mono">
+                /sala/&lt;slug-da-sala&gt;
+              </span>{" "}
+              — por exemplo:{' '}
+              <span className="font-mono">/sala/sala-gc</span>,{' '}
+              <span className="font-mono">/sala/backyard-209</span>, etc.
+            </p>
+          </div>
+        </article>
+
+        {/* Card 3 – Líder de Facilities (painel + cadastros) */}
+        <article className="group flex flex-col rounded-3xl border border-amber-400/50 bg-white/10 p-4 shadow-[0_20px_70px_rgba(0,0,0,0.85)] backdrop-blur-3xl">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-amber-200">
+                Perfil 3
+              </p>
+              <h2 className="text-sm font-semibold">
+                Liderança de Facilities (painel + gestão)
+              </h2>
+            </div>
+            <span className="rounded-full bg-amber-500/25 px-3 py-1 text-[10px] font-semibold text-amber-50">
+              Gestão
+            </span>
+          </div>
+
+          <p className="text-[12px] text-slate-200">
+            A liderança tem uma visão consolidada dos problemas mais recentes,
+            últimos check-ins de limpeza e consegue gerenciar a lista de ambientes
+            da sede, incluindo os slugs usados nos QR Codes.
+          </p>
+
+          <ul className="mt-3 space-y-1 text-[11px] text-slate-300">
+            <li>• Painel com problemas recentes reportados nas salas</li>
+            <li>• Lista de últimos check-ins realizados pela equipe</li>
+            <li>• Cadastro e edição de ambientes (nome, andar, tipo, slug QR)</li>
+            <li>• Base pronta para evoluir para permissões e login real</li>
+          </ul>
+
+          <div className="mt-4 flex-1" />
+
+          <div className="mt-3 space-y-2">
+            <Link
+              href="/painel-facilities"
+              className="inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 via-orange-400 to-fuchsia-500 px-4 py-2.5 text-[11px] font-semibold text-slate-950 shadow-lg shadow-amber-500/40 transition group-hover:brightness-110"
+            >
+              Abrir painel de problemas e check-ins
+            </Link>
+            <Link
+              href="/admin/ambientes"
+              className="inline-flex w-full items-center justify-center rounded-2xl border border-white/20 bg-black/40 px-4 py-2.5 text-[11px] font-semibold text-slate-100 shadow-lg shadow-black/60 transition group-hover:border-amber-300/60 group-hover:text-amber-50"
+            >
+              Gerenciar ambientes e QR Codes
+            </Link>
+            <p className="text-[10px] text-slate-400">
+              Em uma próxima fase, este card pode virar o “login” oficial da
+              liderança, conectado ao Google Workspace apenas para quem for
+              autorizado.
+            </p>
+          </div>
+        </article>
       </section>
 
-      <section className="flex flex-col gap-3 text-xs">
-        {/* Card 1 – Equipe de Facilities */}
-        <Link
-          href="/minha-rota"
-          className="group rounded-2xl border border-emerald-400/25 bg-gradient-to-br from-emerald-500/20 via-emerald-500/5 to-slate-900/80 p-4 shadow-lg shadow-emerald-900/40 backdrop-blur-2xl transition hover:border-emerald-300/70 hover:shadow-emerald-400/50"
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.18em] text-emerald-200">
-                Equipe de Facilities
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-50">
-                Acessar Minha Rota
-              </p>
-              <p className="mt-1 text-[11px] text-slate-200">
-                Visualize a rota de limpeza do dia, marque o status de cada sala,
-                registre ocorrências e faça upload de fotos.
-              </p>
-            </div>
-            <div className="mt-1 rounded-full bg-black/40 px-2 py-1 text-[10px] font-semibold text-emerald-100">
-              Uso interno
-            </div>
-          </div>
-          <p className="mt-3 text-[10px] text-emerald-100/80">
-            Recomendo salvar essa tela como atalho na tela inicial do celular da
-            equipe de limpeza. Assim, um toque já abre a rota do dia.
-          </p>
-        </Link>
-
-        {/* Card 2 – Colaboradores em geral */}
-        <Link
-          href="/sala/backyard-209"
-          className="group rounded-2xl border border-sky-400/25 bg-gradient-to-br from-sky-500/20 via-sky-500/5 to-slate-900/80 p-4 shadow-lg shadow-sky-900/40 backdrop-blur-2xl transition hover:border-sky-300/70 hover:shadow-sky-400/50"
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.18em] text-sky-200">
-                Colaboradores T Group
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-50">
-                Ver status da minha sala
-              </p>
-              <p className="mt-1 text-[11px] text-slate-200">
-                Na versão final, cada sala terá um QR Code na porta. Ao apontar a
-                câmera, você verá aqui o status de limpeza e poderá enviar um
-                feedback rápido.
-              </p>
-            </div>
-            <div className="mt-1 rounded-full bg-black/40 px-2 py-1 text-[10px] font-semibold text-sky-100">
-              Acesso via QR
-            </div>
-          </div>
-          <p className="mt-3 text-[10px] text-sky-100/80">
-            Neste ambiente de testes, este card leva para a sala{' '}
-            <span className="font-semibold">Backyard 209</span> como exemplo.
-          </p>
-        </Link>
-      </section>
-    </div>
+      {/* Rodapé explicativo para a demo */}
+      <footer className="mt-6 max-w-3xl rounded-2xl border border-white/10 bg-black/40 p-4 text-[11px] text-slate-300 shadow-[0_18px_60px_rgba(0,0,0,0.85)] backdrop-blur-2xl">
+        <p className="font-semibold text-slate-100">
+          Como apresentar amanhã para o sócio
+        </p>
+        <ol className="mt-2 list-decimal space-y-1 pl-4">
+          <li>
+            Começa nesta tela e explica rapidamente os três perfis: operação
+            (Facilities), experiência via QR (toda a casa) e gestão (liderança).
+          </li>
+          <li>
+            Clica em <span className="font-semibold">“Acessar como colaborador de Facilities”</span>
+            e mostra a rota, registro de limpeza e upload de foto.
+          </li>
+          <li>
+            Volta para a home, clica em <span className="font-semibold">“Ver exemplo de sala (Recepção)”</span>{" "}
+            e mostra a experiência de quem escaneia o QR Code.
+          </li>
+          <li>
+            Por fim, abre o <span className="font-semibold">Painel de Facilities</span> e o{" "}
+            <span className="font-semibold">Admin de ambientes</span>, mostrando que
+            existe uma visão de gestão e não só um app “operacional”.
+          </li>
+        </ol>
+      </footer>
+    </main>
   )
 }
