@@ -1,80 +1,80 @@
 // app/api/seed-facilities/route.ts
-// @ts-nocheck
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
+    // Lista oficial que você passou
     const colaboradores = [
       {
         nome: 'Giulia Costa',
         email: 'giulia@agenciataj.com',
-        perfil: 'LIMPEZA',
-        fullAccess: false,
+        tipo: 'LIMPEZA',
+        acessoFull: false,
       },
       {
         nome: 'Mateus dos Santos',
         email: 'mateus.santos@agenciataj.com',
-        perfil: 'LIMPEZA',
-        fullAccess: false,
+        tipo: 'LIMPEZA',
+        acessoFull: false,
       },
       {
         nome: 'Adriana França',
         email: 'adriana@agenciataj.com',
-        perfil: 'COZINHA',
-        fullAccess: false,
+        tipo: 'COZINHA',
+        acessoFull: false,
       },
       {
         nome: 'Bruno Farias',
         email: 'facilities@agenciataj.com',
-        perfil: 'RECEPCAO',
-        fullAccess: false,
+        tipo: 'RECEPCAO',
+        acessoFull: false,
       },
       {
         nome: 'Moreno',
         email: 'gc@agenciataj.com',
-        perfil: 'GC',
-        fullAccess: true,
+        tipo: 'GENTE_E_CULTURA',
+        acessoFull: true,
       },
     ]
 
     const resultados = []
 
-    for (const c of colaboradores) {
-      const upserted = await prisma.colaboradorFacility.upsert({
-        where: { email: c.email },
+    for (const colab of colaboradores) {
+      const result = await prisma.colaboradorFacility.upsert({
+        where: { email: colab.email },
         update: {
-          nome: c.nome,
-          perfil: c.perfil,
-          fullAccess: c.fullAccess,
+          nome: colab.nome,
           ativo: true,
+          tipo: colab.tipo,
+          acessoFull: colab.acessoFull,
         },
         create: {
-          nome: c.nome,
-          email: c.email,
-          perfil: c.perfil,
-          fullAccess: c.fullAccess,
+          nome: colab.nome,
+          email: colab.email,
           ativo: true,
+          tipo: colab.tipo,
+          acessoFull: colab.acessoFull,
         },
       })
 
-      resultados.push({
-        id: upserted.id,
-        nome: upserted.nome,
-        email: upserted.email,
-        perfil: upserted.perfil,
-        fullAccess: upserted.fullAccess,
-      })
+      resultados.push(result)
     }
 
     return NextResponse.json({
-      message: 'Seed de colaboradores de Facilities executado com sucesso.',
-      colaboradores: resultados,
+      ok: true,
+      message: 'Colaboradores de Facilities cadastrados/atualizados com sucesso.',
+      total: resultados.length,
+      emails: resultados.map((r) => r.email),
     })
-  } catch (error) {
-    console.error('Erro em GET /api/seed-facilities', error)
+  } catch (err: any) {
+    console.error('Seed Facilities ERROR', err)
+
     return NextResponse.json(
-      { error: 'Erro interno ao executar seed de Facilities.' },
+      {
+        error: 'Erro interno ao executar seed de Facilities.',
+        detail: String(err?.message ?? err),
+      },
       { status: 500 },
     )
   }
