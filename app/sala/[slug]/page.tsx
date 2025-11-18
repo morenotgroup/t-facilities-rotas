@@ -1,92 +1,142 @@
-import { ambientes, ultimoStatusPorAmbiente } from '@/app/data'
+// app/sala/[slug]/page.tsx
+import { prisma } from '@/lib/prisma'
 
-type Props = {
+type SalaPageProps = {
   params: { slug: string }
 }
 
-export default function SalaStatusPage({ params }: Props) {
+export default async function SalaStatusPage({ params }: SalaPageProps) {
   const { slug } = params
 
-  const ambiente = ambientes.find((a) => a.slug === slug)
+  // Busca a sala pelo slugQr (ex: "backyard_209" ou "recepcao_sede")
+  const ambiente = await prisma.ambiente.findFirst({
+    where: { slugQr: slug },
+    include: {
+      checkins: {
+        orderBy: { dataHora: 'desc' },
+        take: 1,
+        include: {
+          colab: true,
+        },
+      },
+    },
+  })
 
   if (!ambiente) {
     return (
-      <div className="p-4">
-        <section className="rounded-2xl border border-red-500/40 bg-red-500/15 p-4 text-sm text-red-50 shadow-lg shadow-red-900/50 backdrop-blur-xl">
-          <p className="font-semibold">Sala não encontrada</p>
-          <p className="mt-1 text-xs text-red-100/90">
-            O QR Code pode estar desatualizado. Avise a equipe de Facilities ou
-            Gente &amp; Cultura.
+      <div className="flex min-h-screen flex-col gap-4 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 p-4 pb-8">
+        <section className="mt-4 rounded-2xl border border-red-500/40 bg-red-500/15 p-4 text-sm text-red-50 shadow-lg shadow-red-900/60 backdrop-blur-xl">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-red-200">
+            QR não reconhecido
+          </p>
+          <p className="mt-1 text-sm font-semibold">
+            Sala não encontrada
+          </p>
+          <p className="mt-2 text-[11px] text-red-100/90">
+            Esse QR Code pode estar desatualizado ou a sala ainda não foi cadastrada
+            no sistema de rotas de limpeza. Avise a equipe de Facilities ou Gente &amp;
+            Cultura.
           </p>
         </section>
       </div>
     )
   }
 
-  const statusInfo = ultimoStatusPorAmbiente[ambiente.id]
+  const ultimoCheckin = ambiente.checkins[0]
 
-  const statusBadge =
-    statusInfo?.status === 'LIMPO'
-      ? 'bg-emerald-500/15 text-emerald-100 border border-emerald-400/50'
-      : statusInfo?.status === 'PENDENTE'
-        ? 'bg-amber-500/15 text-amber-100 border border-amber-400/50'
-        : 'bg-slate-500/20 text-slate-100 border border-slate-400/40'
+  let status = 'SEM REGISTROS'
+  if (ultimoCheckin?.status === 'LIMPO') status = 'LIMPO'
+  else if (ultimoCheckin?.status === 'PENDENTE') status = 'PENDENTE'
+  else if (ultimoCheckin?.status === 'EM_ANDAMENTO') status = 'EM ANDAMENTO'
+
+  const statusBadgeClasses =
+    status === 'LIMPO'
+      ? 'bg-emerald-500/15 text-emerald-100 border border-emerald-400/60'
+      : status === 'PENDENTE'
+        ? 'bg-amber-500/15 text-amber-100 border border-amber-400/60'
+        : status === 'EM ANDAMENTO'
+          ? 'bg-sky-500/15 text-sky-100 border border-sky-400/60'
+          : 'bg-slate-500/20 text-slate-100 border border-slate-400/50'
+
+  const dataHoraFormatada = ultimoCheckin
+    ? new Date(ultimoCheckin.dataHora).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null
 
   return (
-    <div className="flex flex-col gap-4 p-4 pb-6">
-      <section className="rounded-2xl border border-white/15 bg-white/10 p-4 text-sm text-slate-50 shadow-lg shadow-purple-900/50 backdrop-blur-2xl">
+    <div className="flex min-h-screen flex-col gap-4 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 p-4 pb-8">
+      {/* Card principal com status da sala */}
+      <section className="mt-2 rounded-2xl border border-white/15 bg-white/10 p-4 text-sm text-slate-50 shadow-[0_18px_60px_rgba(0,0,0,0.8)] backdrop-blur-2xl">
         <p className="text-[11px] uppercase tracking-[0.18em] text-amber-200">
           Status da sala
         </p>
+
         <div className="mt-2 flex items-start justify-between gap-2">
           <div>
             <p className="text-lg font-semibold">{ambiente.nome}</p>
             <p className="text-[11px] text-slate-200">
-              {ambiente.andar} • {ambiente.bloco} • {ambiente.tipo}
+              {ambiente.andar ?? '—'} • {ambiente.bloco ?? '—'} •{' '}
+              {ambiente.tipo ?? 'Ambiente T Group'}
             </p>
           </div>
+
           <div
-            className={`mt-1 inline-flex items-center rounded-full px-3 py-1 text-[10px] font-semibold ${statusBadge}`}
+            className={`mt-1 inline-flex items-center rounded-full px-3 py-1 text-[10px] font-semibold ${statusBadgeClasses}`}
           >
-            {statusInfo?.status ?? 'SEM REGISTROS'}
+            {status}
           </div>
         </div>
 
-        {statusInfo ? (
-          <div className="mt-3 rounded-2xl border border-white/15 bg-black/35 p-3 text-xs text-slate-50 shadow-inner shadow-black/60">
+        {ultimoCheckin ? (
+          <div className="mt-4 rounded-2xl border border-white/15 bg-black/35 p-3 text-xs text-slate-50 shadow-inner shadow-black/70">
             <p>
-              Última limpeza:{' '}
+              Última atualização:{' '}
               <span className="font-semibold">
-                {new Date(statusInfo.dataHoraISO).toLocaleString('pt-BR')}
+                {dataHoraFormatada}
               </span>
             </p>
             <p className="mt-1">
               Responsável:{' '}
-              <span className="font-semibold">{statusInfo.responsavel}</span>
+              <span className="font-semibold">
+                {ultimoCheckin.colab.nome}
+              </span>
             </p>
-            {statusInfo.observacoes && (
-              <p className="mt-1 text-slate-100">
-                Obs:{' '}
-                <span className="text-slate-200">{statusInfo.observacoes}</span>
+            {ultimoCheckin.observacoes && (
+              <p className="mt-2 text-[11px] text-slate-100">
+                <span className="font-semibold text-amber-200">Observações: </span>
+                <span className="text-slate-200">
+                  {ultimoCheckin.observacoes}
+                </span>
               </p>
             )}
           </div>
         ) : (
-          <p className="mt-3 text-xs text-slate-200">
-            Ainda não há registro de limpeza para esta sala.
+          <p className="mt-4 text-[11px] text-slate-200">
+            Ainda não há registros de limpeza para esta sala. Assim que a equipe de
+            Facilities registrar a primeira limpeza na rota, as informações vão
+            aparecer aqui.
           </p>
         )}
       </section>
 
-      <section className="rounded-2xl border border-white/10 bg-white/6 p-4 text-xs text-slate-50 shadow-lg shadow-black/50 backdrop-blur-2xl">
-        <p className="font-semibold text-sm">Como você encontrou esta sala?</p>
-        <p className="mt-1 text-[11px] text-slate-200">
-          Em breve, este espaço será usado para enviar feedback direto para a equipe
-          de Facilities (ocorrências, elogios e problemas).
+      {/* Card explicando o QR e o futuro feedback */}
+      <section className="rounded-2xl border border-white/10 bg-white/6 p-4 text-xs text-slate-50 shadow-[0_20px_70px_rgba(0,0,0,0.85)] backdrop-blur-2xl">
+        <p className="text-sm font-semibold">
+          Como funciona este QR Code?
         </p>
-        <p className="mt-2 text-[11px] text-slate-300">
-          Por enquanto, se algo estiver fora do padrão, chame Gente &amp; Cultura ou
-          envie uma mensagem no grupo oficial da empresa.
+        <p className="mt-2 text-[11px] text-slate-200">
+          Este QR faz parte do sistema de rotas de limpeza do T Group. A equipe de
+          Facilities registra cada limpeza no app interno, e aqui você consegue
+          acompanhar o status da sala em tempo quase real.
+        </p>
+        <p className="mt-2 text-[11px] text-slate-200">
+          Em versões futuras, você também poderá enviar feedback rápido sobre a
+          limpeza, apontar problemas específicos ou elogiar a equipe.
         </p>
       </section>
     </div>
