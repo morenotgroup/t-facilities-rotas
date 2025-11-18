@@ -1,39 +1,39 @@
+// app/api/minha-rota/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET(req: NextRequest) {
+export const dynamic = 'force-dynamic'
+
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url)
+    const { searchParams } = new URL(request.url)
     const email = searchParams.get('email')
 
     if (!email) {
       return NextResponse.json(
-        { error: 'E-mail é obrigatório.' },
-        { status: 400 },
+        { ok: false, error: 'E-mail do colaborador é obrigatório.' },
+        { status: 200 },
       )
     }
 
-    // 1. Colaborador de Facilities pelo e-mail
-    const colaborador = await prisma.colaboradorFacility.findFirst({
-      where: {
-        email,
-        ativo: true,
-      },
+    const colaborador = await prisma.colaboradorFacility.findUnique({
+      where: { email },
     })
 
     if (!colaborador) {
       return NextResponse.json(
-        { error: 'Colaborador de Facilities não encontrado ou inativo.' },
-        { status: 404 },
+        { ok: false, error: 'Nenhum colaborador de Facilities encontrado com este e-mail.' },
+        { status: 200 },
       )
     }
 
-    // 2. Rota de HOJE (00:00 até 23:59) desse colaborador
+    // Janela de "hoje"
     const hoje = new Date()
     hoje.setHours(0, 0, 0, 0)
     const amanha = new Date(hoje)
     amanha.setDate(hoje.getDate() + 1)
 
+    // Pega a rota do dia para esse colaborador
     const rota = await prisma.rotaDiaria.findFirst({
       where: {
         colabId: colaborador.id,
@@ -44,11 +44,9 @@ export async function GET(req: NextRequest) {
       },
       include: {
         itens: {
+          orderBy: { ordem: 'asc' },
           include: {
-            ambiente: true,
-          },
-          orderBy: {
-            ordem: 'asc',
+            ambiente: true, // se por algum motivo isso quebrar, a gente simplifica depois
           },
         },
       },
@@ -57,44 +55,53 @@ export async function GET(req: NextRequest) {
     if (!rota) {
       return NextResponse.json(
         {
-          error:
-            'Nenhuma rota encontrada para este colaborador na data de hoje.',
+          ok: true,
+          rota: null,
+          message:
+            'Ainda não existe rota registrada para hoje para este colaborador. Peça para o líder de Facilities gerar a rota do dia.',
         },
-        { status: 404 },
+        { status: 200 },
       )
     }
 
-    // 3. Formatar resposta pra tela /minha-rota
-    return NextResponse.json({
-      colaborador: {
-        id: colaborador.id,
-        nome: colaborador.nome,
-        email: colaborador.email,
-      },
-      rota: {
-        id: rota.id,
-        data: rota.data.toISOString(),
-        turno: rota.turno,
-        obsGeral: rota.obsGeral,
-        itens: rota.itens.map((item) => ({
-          id: item.id,
-          ordem: item.ordem,
-          prioridade: item.prioridade,
-          checklist: item.checklist,
-          ambiente: {
-            id: item.ambiente.id,
-            nome: item.ambiente.nome,
-            andar: item.ambiente.andar,
-            bloco: item.ambiente.bloco,
-            tipo: item.ambiente.tipo,
-          },
-        })),
-      },
-    })
-  } catch (error) {
-    console.error('Erro em GET /api/minha-rota', error)
+    // Monta a resposta enxuta
     return NextResponse.json(
-      { error: 'Erro interno ao carregar rota.' },
+      {
+        ok: true,
+        rota: {
+          id: rota.id,
+          data: rota.data,
+          obsGeral: rota.obsGeral ?? null,
+          colaborador: {
+            id: colaborador.id,
+            nome: colaborador.nome,
+            email: colaborador.email,
+          },
+          itens: rota.itens.map((item) => ({
+            id: item.id,
+            ordem: item.ordem,
+            prioridade: item.prioridade ?? null,
+            ambiente: item.ambiente
+              ? {
+                  id: item.ambiente.id,
+                  nome: item.ambiente.nome,
+                  localizacao: item.ambiente.localizacao ?? '',
+                  slug: item.ambiente.slug,
+                }
+              : null,
+          })),
+        },
+      },
+      { status: 200 },
+    )
+  } catch (err: any) {
+    console.error('API /minha-rota ERROR', err)
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'Erro interno ao carregar rota.',
+        detail: String(err?.message ?? err),
+      },
       { status: 500 },
     )
   }
