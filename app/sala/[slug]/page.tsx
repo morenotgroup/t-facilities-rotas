@@ -1,3 +1,4 @@
+import { SalaFeedbackForm } from './SalaFeedbackForm'
 // app/sala/[slug]/page.tsx
 import { prisma } from '@/lib/prisma'
 
@@ -150,7 +151,7 @@ export default async function SalaStatusPage({ params }: SalaPageProps) {
         )}
       </section>
 
-      {/* Card explicando o QR e o futuro feedback */}
+            {/* Card explicando o QR e feedback */}
       <section className="rounded-2xl border border-white/10 bg-white/6 p-4 text-xs text-slate-50 shadow-[0_20px_70px_rgba(0,0,0,0.85)] backdrop-blur-2xl">
         <p className="text-sm font-semibold">
           Como funciona este QR Code?
@@ -161,10 +162,12 @@ export default async function SalaStatusPage({ params }: SalaPageProps) {
           acompanhar o status da sala em tempo quase real.
         </p>
         <p className="mt-2 text-[11px] text-slate-200">
-          Em versões futuras, você também poderá enviar feedback rápido sobre a
-          limpeza, apontar problemas específicos ou elogiar a equipe.
+          Abaixo, você pode enviar um feedback rápido sobre a limpeza desta sala.
         </p>
+
+        <SalaFeedbackForm ambienteId={ambiente.id} />
       </section>
+
     </div>
   )
 }
