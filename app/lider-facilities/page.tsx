@@ -1,26 +1,33 @@
 // app/lider-facilities/page.tsx
 // @ts-nocheck
+
+// força o Next a tratar como rota dinâmica (usa Prisma/banco)
+export const dynamic = 'force-dynamic'
+
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { GeradorRotasBruno } from './GeradorRotas'
 
 export default async function LiderFacilitiesPage() {
-  // 1. Colaboradores de Facilities ativos
+  // 1) Buscar colaboradores de Facilities ativos
   const colaboradores = await prisma.colaboradorFacility.findMany({
     where: { ativo: true },
     orderBy: { nome: 'asc' },
   })
 
+  // líder “oficial” pela conta de e-mail
   const lider =
     colaboradores.find((c) => c.email === 'facilities@agenciataj.com') || null
 
+  // quem recebe rota operacional (limpeza/cozinha/etc)
   const colaboradoresOperacionais = colaboradores.filter(
-    (c) => c.email !== 'gc@agenciataj.com', // GC fora da lista de rota
+    (c) => c.email !== 'gc@agenciataj.com', // GC fora da rotina diária
   )
 
-  // 2. Rotas de hoje
+  // 2) Rotas de HOJE
   const hoje = new Date()
   hoje.setHours(0, 0, 0, 0)
+
   const amanha = new Date(hoje)
   amanha.setDate(hoje.getDate() + 1)
 
@@ -36,20 +43,20 @@ export default async function LiderFacilitiesPage() {
     },
   })
 
-  // mapear nome do colaborador via colabId
+  // mapa id -> nome do colaborador
   const mapaColabs: Record<string, string> = {}
   for (const c of colaboradores) {
     mapaColabs[c.id] = c.nome
   }
 
-  // 3. Feedbacks com problema (limitados)
+  // 3) Feedbacks de sala marcados como PROBLEMA (os últimos)
   const feedbacksProblema = await prisma.feedbackSala.findMany({
     where: {
       statusSala: 'PROBLEMA',
     },
     take: 5,
     orderBy: {
-      id: 'desc', // seguro: id com certeza existe
+      id: 'desc',
     },
   })
 
@@ -65,21 +72,22 @@ export default async function LiderFacilitiesPage() {
         </h1>
         <p className="mt-2 max-w-2xl text-[12px] text-slate-300">
           Esta é a tela única para o líder de Facilities operar o dia a dia:
-          criar rotas para o time de limpeza, acompanhar o que foi planejado para
-          hoje, monitorar problemas reportados nas salas e acessar os atalhos de
-          gestão da plataforma.
+          montar rotas para o time de limpeza, acompanhar o que foi planejado
+          para hoje, monitorar problemas reportados nas salas e acessar os
+          atalhos de gestão da plataforma.
         </p>
-        <p className="mt-1 text-[11px] text-slate-400">
-          Recomende que o Bruno salve este endereço nos favoritos do navegador e
-          acesse sempre por aqui.
+        <p className="mt-1 max-w-xl text-[11px] text-slate-400">
+          Dica: peça para o Bruno salvar esta página nos favoritos do navegador
+          (ou adicionar à tela inicial do celular). Assim, ele sempre entra
+          direto por aqui.
         </p>
       </header>
 
       {/* Grid principal: 2 colunas no desktop */}
       <section className="grid gap-4 md:grid-cols-2">
-        {/* Coluna esquerda: criação de rotas + rotas de hoje */}
+        {/* COLUNA ESQUERDA */}
         <div className="space-y-4">
-          {/* Card: Criar/atualizar rota */}
+          {/* Card: Criar / atualizar rota */}
           <section className="rounded-3xl border border-emerald-400/40 bg-white/10 p-4 text-xs shadow-[0_20px_70px_rgba(0,0,0,0.85)] backdrop-blur-3xl">
             <div className="mb-2 flex items-center justify-between gap-2">
               <div>
@@ -96,10 +104,11 @@ export default async function LiderFacilitiesPage() {
             </div>
             <p className="mb-3 text-[11px] text-slate-200">
               Use este bloco para montar a rota do dia para Giulia, Mateus e
-              Adriana. Em poucos cliques, a plataforma cria a lista de ambientes
-              que cada um precisa limpar, na ordem padrão.
+              Adriana. Em poucos cliques, a plataforma gera a lista de ambientes
+              que cada um precisa limpar, na ordem padrão de prioridade.
             </p>
 
+            {/* Formulário de geração de rota (Bruno) */}
             <GeradorRotasBruno colaboradores={colaboradoresOperacionais} />
           </section>
 
@@ -154,7 +163,7 @@ export default async function LiderFacilitiesPage() {
           </section>
         </div>
 
-        {/* Coluna direita: problemas + atalhos */}
+        {/* COLUNA DIREITA */}
         <div className="space-y-4">
           {/* Card: Problemas recentes */}
           <section className="rounded-3xl border border-red-400/40 bg-red-500/10 p-4 text-xs shadow-[0_20px_70px_rgba(0,0,0,0.9)] backdrop-blur-3xl">
@@ -237,17 +246,20 @@ export default async function LiderFacilitiesPage() {
             </h2>
             <p className="mt-2 text-[11px] text-slate-200">
               Estes atalhos são pensados para uso eventual da liderança. No dia a
-              dia, o foco do Bruno pode ser apenas este painel e a tela de rota
-              que cada colaborador acessa.
+              dia, o foco do Bruno pode ser apenas esta tela e o uso da rota por
+              cada colaborador no próprio celular.
             </p>
 
             <div className="mt-3 space-y-2">
+              {/* Se você já recriou /painel-facilities, mantém este botão.
+                 Se ainda não existir, pode comentar esse bloco sem dó. */}
               <Link
                 href="/painel-facilities"
                 className="inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 via-orange-400 to-fuchsia-500 px-4 py-2.5 text-[11px] font-semibold text-slate-950 shadow-lg shadow-amber-500/40 transition hover:brightness-110"
               >
                 Abrir painel completo de problemas e check-ins
               </Link>
+
               <Link
                 href="/admin/ambientes"
                 className="inline-flex w-full items-center justify-center rounded-2xl border border-white/20 bg-black/40 px-4 py-2.5 text-[11px] font-semibold text-slate-100 shadow-lg shadow-black/60 transition hover:border-amber-300/60 hover:text-amber-50"
@@ -257,9 +269,9 @@ export default async function LiderFacilitiesPage() {
             </div>
 
             <p className="mt-2 text-[10px] text-slate-400">
-              Reforce com o Bruno que os cadastros de ambientes e ajustes finos
-              podem ser feitos com apoio da área de Gente & Cultura, se ele não se
-              sentir confortável.
+              Os cadastros de ambientes e ajustes finos podem ser feitos com
+              apoio da área de Gente & Cultura, se o líder não se sentir à
+              vontade nessas telas.
             </p>
           </section>
         </div>
