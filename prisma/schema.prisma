@@ -1,12 +1,87 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
+}
+
+model Ambiente {
+  id               String           @id @default(cuid())
+  nome             String
+  andar            String?
+  bloco            String?
+  tipo             String?
+  slugQr           String           @unique
+  frequenciaPadrao String?
+  ativo            Boolean          @default(true)
+
+  itensRota        ItemRota[]
+  checkins         CheckinLimpeza[]
+  feedbacks        FeedbackSala[]
+}
+
+model ColaboradorFacility {
+  id       String           @id @default(cuid())
+  nome     String
+  email    String           @unique
+  ativo    Boolean          @default(true)
+  tipo     String           // LIMPEZA / COZINHA / FACILITIES_GERAL
+
+  rotas    RotaDiaria[]
+  checkins CheckinLimpeza[]
+}
+
+model RotaDiaria {
+  id         String           @id @default(cuid())
+  data       DateTime
+  turno      String
+  colabId    String
+  colab      ColaboradorFacility @relation(fields: [colabId], references: [id])
+  obsGeral   String?
+
+  itens      ItemRota[]
+  checkins   CheckinLimpeza[]
+}
+
+model ItemRota {
+  id          String     @id @default(cuid())
+  rotaId      String
+  rota        RotaDiaria @relation(fields: [rotaId], references: [id])
+
+  ordem       Int
+  ambienteId  String
+  ambiente    Ambiente   @relation(fields: [ambienteId], references: [id])
+
+  prioridade  String     // Alta / Média / Baixa
+  checklist   String?
+}
+
+model CheckinLimpeza {
+  id          String           @id @default(cuid())
+  dataHora    DateTime
+  ambienteId  String
+  ambiente    Ambiente         @relation(fields: [ambienteId], references: [id])
+
+  rotaId      String?
+  rota        RotaDiaria?      @relation(fields: [rotaId], references: [id])
+
+  colabId     String
+  colab       ColaboradorFacility @relation(fields: [colabId], references: [id])
+
+  status      String           // LIMPO / PENDENTE / EM_ANDAMENTO
+  observacoes String?
+  fotoUrl     String?
+}
+
+model FeedbackSala {
+  id          String     @id @default(cuid())
+  dataHora    DateTime
+  ambienteId  String
+  ambiente    Ambiente   @relation(fields: [ambienteId], references: [id])
+
+  userEmail   String?
+  avaliacao   String     // OK / PROBLEMA
+  comentario  String?
 }
