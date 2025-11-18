@@ -1,437 +1,222 @@
+// app/minha-rota/page.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
-type ApiItemRota = {
+type Ambiente = {
   id: string
-  ordem: number
-  prioridade: string
-  checklist: string | null
-  ambiente: {
-    id: string
-    nome: string
-    andar: string | null
-    bloco: string | null
-    tipo: string | null
-  }
+  nome: string
+  localizacao?: string | null
+  slug: string
 }
 
-type ApiResponse = {
+type RotaItem = {
+  id: string
+  ordem: number
+  prioridade?: string | null
+  ambiente: Ambiente | null
+}
+
+type RotaDia = {
+  id: string
+  data: string
+  obsGeral?: string | null
   colaborador: {
     id: string
     nome: string
     email: string
   }
-  rota: {
-    id: string
-    data: string
-    turno: string
-    obsGeral: string | null
-    itens: ApiItemRota[]
-  }
+  itens: RotaItem[]
 }
 
 export default function MinhaRotaPage() {
   const [email, setEmail] = useState('gc@agenciataj.com')
-  const [data, setData] = useState<ApiResponse | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [carregando, setCarregando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  const [mensagem, setMensagem] = useState<string | null>(null)
+  const [rota, setRota] = useState<RotaDia | null>(null)
 
-  const [statusByItem, setStatusByItem] = useState<Record<string, string>>({})
-  const [obsByItem, setObsByItem] = useState<Record<string, string>>({})
-  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
-  const [photoPreviewByItem, setPhotoPreviewByItem] = useState<
-    Record<string, string | null>
-  >({})
-  const [photoFileByItem, setPhotoFileByItem] = useState<
-    Record<string, File | null>
-  >({})
-
-  // === 1. Carregar rota da API ===
-  const carregarRota = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await fetch(`/api/minha-rota?email=${encodeURIComponent(email)}`)
-      if (!res.ok) {
-        const { error } = await res.json()
-        throw new Error(error || 'Erro ao carregar rota')
-      }
-      const json = (await res.json()) as ApiResponse
-      setData(json)
-
-      // Reset de estados quando a rota muda
-      setStatusByItem({})
-      setObsByItem({})
-      setExpandedItems({})
-      setPhotoPreviewByItem({})
-      setPhotoFileByItem({})
-    } catch (e: any) {
-      setError(e.message)
-      setData(null)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    carregarRota()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // === 2. Auxiliares de UI ===
-
-  const toggleExpand = (id: string) => {
-    setExpandedItems((prev) => ({ ...prev, [id]: !prev[id] }))
-  }
-
-  const handlePhotoChange = (itemId: string, file?: File | null) => {
-    if (!file) {
-      setPhotoPreviewByItem((prev) => ({ ...prev, [itemId]: null }))
-      setPhotoFileByItem((prev) => ({ ...prev, [itemId]: null }))
-      return
-    }
-    const url = URL.createObjectURL(file)
-    setPhotoPreviewByItem((prev) => ({ ...prev, [itemId]: url }))
-    setPhotoFileByItem((prev) => ({ ...prev, [itemId]: file }))
-  }
-
-  // === 3. Upload real da foto para Cloudinary ===
-
-  const uploadImageToCloudinary = async (file: File): Promise<string> => {
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
-
-    if (!cloudName || !uploadPreset) {
-      throw new Error('Cloudinary não está configurado corretamente.')
-    }
-
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('upload_preset', uploadPreset)
-
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      {
-        method: 'POST',
-        body: formData,
-      },
-    )
-
-    if (!res.ok) {
-      throw new Error('Erro ao enviar imagem para Cloudinary.')
-    }
-
-    const json = await res.json()
-    return json.secure_url as string
-  }
-
-  // === 4. Registrar limpeza (com foto opcional) ===
-
-  const registrarLimpeza = async (
-    itemId: string,
-    ambienteId: string,
-    ambienteNome: string,
-  ) => {
-    if (!data) return
-
-    const status = statusByItem[itemId] || 'LIMPO'
-    const observacoes = obsByItem[itemId] || ''
-    const file = photoFileByItem[itemId] || null
+  async function carregarRota() {
+    setCarregando(true)
+    setErro(null)
+    setMensagem(null)
+    setRota(null)
 
     try {
-      let fotoUrl: string | null = null
-
-      if (file) {
-        fotoUrl = await uploadImageToCloudinary(file)
-      }
-
-      const res = await fetch('/api/checkins', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          ambienteId,
-          rotaId: data.rota.id,
-          status,
-          observacoes,
-          fotoUrl,
-        }),
+      const res = await fetch(`/api/minha-rota?email=${encodeURIComponent(email)}`, {
+        method: 'GET',
+        cache: 'no-store',
       })
 
-      if (!res.ok) {
-        const { error } = await res.json()
-        throw new Error(error || 'Erro ao registrar limpeza')
+      const data = await res.json().catch(() => null)
+
+      if (!data) {
+        setErro('Não foi possível interpretar a resposta do servidor.')
+        return
       }
 
-      alert(`Limpeza registrada para ${ambienteNome}`)
+      if (!data.ok) {
+        setErro(data.error || 'Erro ao carregar rota.')
+        return
+      }
 
-      // Limpa campos do item
-      setObsByItem((prev) => ({ ...prev, [itemId]: '' }))
-      setPhotoFileByItem((prev) => ({ ...prev, [itemId]: null }))
-      setPhotoPreviewByItem((prev) => ({ ...prev, [itemId]: null }))
-    } catch (e: any) {
-      alert(e.message)
+      // ok: true
+      if (!data.rota) {
+        setMensagem(
+          data.message ||
+            'Ainda não há rota registrada para hoje para este colaborador.',
+        )
+        setRota(null)
+        return
+      }
+
+      setRota({
+        ...data.rota,
+        data: data.rota.data,
+      })
+    } catch (e) {
+      console.error(e)
+      setErro('Erro de comunicação com o servidor.')
+    } finally {
+      setCarregando(false)
     }
   }
 
-  const rota = data?.rota
+  function formatarDataBr(iso: string) {
+    try {
+      const d = new Date(iso)
+      return d.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })
+    } catch {
+      return iso
+    }
+  }
 
   return (
-    <div className="flex flex-col gap-4 p-4 pb-6">
-      {/* Bloco de acesso / e-mail */}
-      <section className="rounded-2xl border border-white/15 bg-white/10 p-4 text-xs text-slate-50 shadow-lg shadow-purple-900/40 backdrop-blur-xl">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-200">
-          Acesso do colaborador
-        </p>
-        <p className="mt-1 text-[11px] text-slate-200/90">
-          Use o e-mail corporativo da equipe de Facilities para carregar a rota de
-          limpeza do dia.
-        </p>
-        <div className="mt-3 flex items-center gap-2">
-          <div className="flex-1 rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-[11px] text-slate-100 shadow-inner shadow-black/40">
+    <main className="flex min-h-screen items-start justify-center bg-gradient-to-b from-slate-950 via-purple-950 to-slate-900 px-4 py-8 text-slate-50">
+      <div className="w-full max-w-md rounded-[32px] border border-white/10 bg-white/5 p-5 shadow-[0_30px_90px_rgba(0,0,0,0.85)] backdrop-blur-3xl">
+        {/* Cabeçalho */}
+        <header className="mb-5">
+          <p className="text-[11px] uppercase tracking-[0.24em] text-amber-200">
+            T Facilities
+          </p>
+          <h1 className="mt-1 text-xl font-semibold leading-tight">
+            Rotas de Limpeza
+          </h1>
+          <p className="mt-1 text-[12px] text-slate-300">
+            Use seu e-mail corporativo de Facilities para ver a rota de limpeza
+            planejada para hoje.
+          </p>
+        </header>
+
+        {/* Card de acesso */}
+        <section className="mb-4 rounded-3xl border border-amber-500/40 bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-fuchsia-500/15 p-4 text-[12px] shadow-inner shadow-black/60">
+          <p className="mb-2 text-[11px] font-semibold tracking-[0.16em] text-amber-100">
+            ACESSO DO COLABORADOR
+          </p>
+
+          <label className="mb-1 block text-[11px] text-amber-50/90">
+            E-mail corporativo
+          </label>
+          <div className="mb-2 flex gap-2">
             <input
-              className="w-full bg-transparent text-[11px] text-slate-50 placeholder:text-slate-500 focus:outline-none"
+              type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="email@tgroup.com.br"
+              className="flex-1 rounded-2xl bg-black/40 px-3 py-2 text-[12px] text-slate-50 outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-amber-300"
             />
+            <button
+              onClick={carregarRota}
+              disabled={carregando || !email}
+              className="rounded-2xl bg-gradient-to-br from-amber-400 via-orange-400 to-fuchsia-500 px-4 py-2 text-[11px] font-semibold text-slate-950 shadow-lg shadow-amber-500/40 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {carregando ? 'Carregando...' : 'Atualizar'}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={carregarRota}
-            className="rounded-xl bg-gradient-to-br from-amber-400 via-orange-400 to-fuchsia-500 px-3 py-2 text-[11px] font-semibold text-slate-950 shadow-lg shadow-amber-500/40 hover:brightness-110"
-          >
-            Atualizar
-          </button>
-        </div>
-        <p className="mt-2 text-[10px] text-slate-300/80">
-          No dia a dia, cada colaborador de Facilities usará seu próprio e-mail para
-          ver apenas a sua rota.
-        </p>
 
-        {loading && (
-          <p className="mt-2 text-[10px] text-amber-200">
-            Carregando rota de hoje...
+          <p className="text-[11px] text-amber-50/80">
+            No dia a dia, Giulia, Mateus e Adriana usarão o próprio e-mail para
+            ver apenas a sua rota.
           </p>
-        )}
-        {error && (
-          <p className="mt-2 text-[10px] text-red-300">
-            {error}
-          </p>
-        )}
-      </section>
 
-      {/* Se não tiver rota */}
-      {!rota && !loading && !error && (
-        <section className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-xs text-red-100 shadow-lg shadow-red-900/40 backdrop-blur-xl">
-          <p className="font-semibold">Nenhuma rota encontrada</p>
-          <p className="mt-1 text-[11px]">
-            Verifique se o e-mail está correto ou se já existe uma rota cadastrada
-            para hoje no sistema.
-          </p>
+          {erro && (
+            <p className="mt-2 text-[11px] font-medium text-red-200">
+              {erro}
+            </p>
+          )}
+
+          {mensagem && !erro && (
+            <p className="mt-2 text-[11px] text-amber-100/90">{mensagem}</p>
+          )}
         </section>
-      )}
 
-      {/* Se tiver rota */}
-      {rota && data && (
-        <>
-          {/* Resumo da rota */}
-          <section className="rounded-2xl border border-white/15 bg-white/10 p-4 text-xs text-slate-50 shadow-lg shadow-purple-900/40 backdrop-blur-xl">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.18em] text-amber-200">
-                  Rota de hoje
-                </p>
-                <p className="text-sm font-semibold">{data.colaborador.nome}</p>
-                <p className="text-[11px] text-slate-300">
-                  {data.colaborador.email}
-                </p>
-              </div>
-              <div className="rounded-xl bg-black/40 px-3 py-1 text-[10px] font-medium text-amber-100 shadow-inner shadow-black/60">
-                Turno:{' '}
-                <span className="font-semibold">
-                  {rota.turno}
-                </span>
-              </div>
-            </div>
-            {rota.obsGeral && (
-              <p className="mt-2 text-[11px] text-slate-200">
-                <span className="font-semibold text-amber-200">Obs: </span>
-                {rota.obsGeral}
+        {/* Rota carregada */}
+        {rota && (
+          <section className="mt-3 space-y-3 text-[12px]">
+            <div className="rounded-3xl border border-white/10 bg-black/40 p-3">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-300">
+                Resumo da rota
               </p>
-            )}
-          </section>
+              <p className="mt-1 text-[13px] font-semibold text-slate-50">
+                {rota.colaborador.nome}
+              </p>
+              <p className="text-[11px] text-slate-300">
+                Data:{' '}
+                <span className="font-mono">
+                  {formatarDataBr(rota.data)}
+                </span>
+              </p>
+              {rota.obsGeral && (
+                <p className="mt-2 text-[11px] text-slate-200">
+                  Observações gerais: {rota.obsGeral}
+                </p>
+              )}
+            </div>
 
-          {/* Lista de ambientes */}
-          <section className="flex flex-col gap-3">
-            {rota.itens.map((item) => {
-              const ambiente = item.ambiente
-              const expanded = expandedItems[item.id]
-              const statusAtual = statusByItem[item.id] || 'LIMPO'
-              const fotoPreview = photoPreviewByItem[item.id] || null
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-3">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-300">
+                Salas da rota
+              </p>
 
-              return (
-                <article
-                  key={item.id}
-                  className="group rounded-2xl border border-white/10 bg-white/8 p-3 text-xs text-slate-50 shadow-lg shadow-black/50 backdrop-blur-2xl transition hover:border-amber-300/40 hover:bg-white/12"
-                >
-                  {/* Cabeçalho */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-semibold">{ambiente.nome}</p>
-                      <p className="text-[11px] text-slate-300">
-                        Ordem {item.ordem} • {ambiente.andar ?? '-'} •{' '}
-                        {ambiente.bloco ?? '-'}
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                          item.prioridade === 'Alta'
-                            ? 'bg-red-500/20 text-red-200 border border-red-400/40'
-                            : item.prioridade === 'Média'
-                              ? 'bg-amber-500/15 text-amber-100 border border-amber-400/40'
-                              : 'bg-slate-500/20 text-slate-100 border border-slate-400/40'
-                        }`}
-                      >
-                        {item.prioridade}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => toggleExpand(item.id)}
-                        className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/30 px-2 py-0.5 text-[10px] text-slate-200 transition group-hover:border-amber-300/60 group-hover:text-amber-100"
-                      >
-                        <span>{expanded ? 'Recolher' : 'Detalhar'}</span>
-                        <span className={`transition ${expanded ? 'rotate-180' : ''}`}>
-                          ▼
+              {rota.itens.length === 0 ? (
+                <p className="mt-2 text-[11px] text-slate-300">
+                  Não há ambientes cadastrados nesta rota.
+                </p>
+              ) : (
+                <ul className="mt-2 space-y-2">
+                  {rota.itens.map((item) => (
+                    <li
+                      key={item.id}
+                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/40 px-3 py-2"
+                    >
+                      <div>
+                        <p className="text-[12px] font-semibold text-slate-50">
+                          {item.ambiente?.nome ?? 'Ambiente sem nome'}
+                        </p>
+                        <p className="text-[10px] text-slate-300">
+                          Ordem{' '}
+                          <span className="font-mono">{item.ordem}</span>
+                          {item.ambiente?.localizacao
+                            ? ` • ${item.ambiente.localizacao}`
+                            : null}
+                        </p>
+                      </div>
+                      {item.prioridade && (
+                        <span className="rounded-full bg-amber-500/20 px-3 py-1 text-[10px] font-semibold text-amber-100">
+                          {item.prioridade}
                         </span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Conteúdo recolhível */}
-                  {expanded && (
-                    <div className="mt-3 space-y-3">
-                      {item.checklist && (
-                        <p className="rounded-xl bg-black/35 px-3 py-2 text-[11px] text-slate-100">
-                          <span className="font-semibold text-amber-200">
-                            Checklist base:{' '}
-                          </span>
-                          {item.checklist}
-                        </p>
                       )}
-
-                      {/* Status */}
-                      <div className="space-y-1">
-                        <p className="text-[11px] font-medium text-slate-100">
-                          Status da sala
-                        </p>
-                        <div className="flex gap-1 text-[10px]">
-                          {['LIMPO', 'PENDENTE', 'EM_ANDAMENTO'].map((opt) => (
-                            <button
-                              key={opt}
-                              type="button"
-                              onClick={() =>
-                                setStatusByItem((prev) => ({
-                                  ...prev,
-                                  [item.id]: opt,
-                                }))
-                              }
-                              className={`flex-1 rounded-full border px-2 py-1 transition ${
-                                statusAtual === opt
-                                  ? opt === 'LIMPO'
-                                    ? 'border-emerald-400/70 bg-emerald-500/25 text-emerald-100'
-                                    : opt === 'PENDENTE'
-                                      ? 'border-amber-400/70 bg-amber-500/25 text-amber-100'
-                                      : 'border-sky-400/70 bg-sky-500/25 text-sky-100'
-                                  : 'border-white/15 bg-black/30 text-slate-300 hover:border-amber-300/50 hover:text-amber-100'
-                              }`}
-                            >
-                              {opt === 'LIMPO'
-                                ? 'Limpo'
-                                : opt === 'PENDENTE'
-                                  ? 'Pendente'
-                                  : 'Em andamento'}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Observações */}
-                      <div className="space-y-1">
-                        <p className="text-[11px] font-medium text-slate-100">
-                          Observações
-                        </p>
-                        <textarea
-                          className="min-h-[68px] w-full rounded-2xl border border-white/15 bg-black/30 px-3 py-2 text-[11px] text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-300/80"
-                          placeholder="Ex: lixeira quebrada, falta de material, algo fora do padrão..."
-                          value={obsByItem[item.id] || ''}
-                          onChange={(e) =>
-                            setObsByItem((prev) => ({
-                              ...prev,
-                              [item.id]: e.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-
-                      {/* Upload de foto */}
-                      <div className="space-y-1">
-                        <p className="text-[11px] font-medium text-slate-100">
-                          Foto da limpeza ou ocorrência (opcional)
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/20 bg-black/30 px-3 py-1.5 text-[11px] font-medium text-slate-100 shadow-inner shadow-black/50 hover:border-amber-300/60 hover:text-amber-100">
-                            <span>Escolher arquivo</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) =>
-                                handlePhotoChange(
-                                  item.id,
-                                  e.target.files?.[0] ?? null,
-                                )
-                              }
-                            />
-                          </label>
-                          {fotoPreview && (
-                            <span className="text-[10px] text-emerald-200">
-                              Foto selecionada ✅
-                            </span>
-                          )}
-                        </div>
-                        {fotoPreview && (
-                          <div className="mt-2 overflow-hidden rounded-2xl border border-white/20 bg-black/40">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={fotoPreview}
-                              alt={`Pré-visualização da foto da sala ${ambiente.nome}`}
-                              className="max-h-40 w-full object-cover"
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Botão de registrar */}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          registrarLimpeza(item.id, ambiente.id, ambiente.nome)
-                        }
-                        className="mt-1 w-full rounded-2xl bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 px-4 py-2.5 text-[11px] font-semibold text-slate-950 shadow-lg shadow-emerald-500/40 hover:brightness-110"
-                      >
-                        Registrar limpeza
-                      </button>
-                    </div>
-                  )}
-                </article>
-              )
-            })}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </section>
-        </>
-      )}
-    </div>
+        )}
+      </div>
+    </main>
   )
 }
