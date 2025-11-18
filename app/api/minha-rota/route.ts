@@ -22,7 +22,11 @@ export async function GET(request: NextRequest) {
 
     if (!colaborador) {
       return NextResponse.json(
-        { ok: false, error: 'Nenhum colaborador de Facilities encontrado com este e-mail.' },
+        {
+          ok: false,
+          error:
+            'Nenhum colaborador de Facilities encontrado com este e-mail.',
+        },
         { status: 200 },
       )
     }
@@ -46,7 +50,7 @@ export async function GET(request: NextRequest) {
         itens: {
           orderBy: { ordem: 'asc' },
           include: {
-            ambiente: true, // se por algum motivo isso quebrar, a gente simplifica depois
+            ambiente: true,
           },
         },
       },
@@ -64,33 +68,49 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Monta a resposta enxuta
-    return NextResponse.json(
-      {
-        ok: true,
-        rota: {
-          id: rota.id,
-          data: rota.data,
-          obsGeral: rota.obsGeral ?? null,
-          colaborador: {
-            id: colaborador.id,
-            nome: colaborador.nome,
-            email: colaborador.email,
-          },
-          itens: rota.itens.map((item) => ({
+    const rotaSerializada = {
+      id: rota.id,
+      data: rota.data,
+      obsGeral: rota.obsGeral ?? null,
+      colaborador: {
+        id: colaborador.id,
+        nome: colaborador.nome,
+        email: colaborador.email,
+      },
+      itens: rota.itens.map((item) => {
+        if (!item.ambiente) {
+          return {
             id: item.id,
             ordem: item.ordem,
             prioridade: item.prioridade ?? null,
-            ambiente: item.ambiente
-              ? {
-                  id: item.ambiente.id,
-                  nome: item.ambiente.nome,
-                  localizacao: item.ambiente.localizacao ?? '',
-                  slug: item.ambiente.slug,
-                }
-              : null,
-          })),
-        },
+            ambiente: null,
+          }
+        }
+
+        // monta localizacao a partir de andar + bloco
+        const partesLoc: string[] = []
+        if (item.ambiente.andar) partesLoc.push(item.ambiente.andar)
+        if (item.ambiente.bloco) partesLoc.push(item.ambiente.bloco)
+        const localizacao = partesLoc.join(' • ')
+
+        return {
+          id: item.id,
+          ordem: item.ordem,
+          prioridade: item.prioridade ?? null,
+          ambiente: {
+            id: item.ambiente.id,
+            nome: item.ambiente.nome,
+            localizacao,
+            slug: item.ambiente.slugQr, // usar o slugQr do banco
+          },
+        }
+      }),
+    }
+
+    return NextResponse.json(
+      {
+        ok: true,
+        rota: rotaSerializada,
       },
       { status: 200 },
     )
