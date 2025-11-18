@@ -56,19 +56,14 @@ export default function MinhaRotaPage() {
       }
       const json = (await res.json()) as ApiResponse
       setData(json)
-
-      // Reset de estados quando muda a rota
-      setStatusByItem({})
-      setObsByItem({})
-      setExpandedItems({})
-      setPhotoPreviewByItem({})
-    } catch (e: any) {
-      setError(e.message)
-      setData(null)
-    } finally {
-      setLoading(false)
-    }
+      // limpa estados...
+  } catch (e: any) {
+    setError(e.message)
+    setData(null)
+  } finally {
+    setLoading(false)
   }
+}
 
   // Carrega automaticamente na primeira abertura
   useEffect(() => {
