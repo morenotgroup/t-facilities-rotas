@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!colab) {
-      // Não é erro "interno" — só não existe colaborador com esse e-mail
+      // Colaborador não encontrado: não é erro de servidor
       return NextResponse.json(
         {
           ok: true,
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 2. Datas de hoje (início e fim do dia) para buscar a rota
+    // 2. Definir intervalo de "hoje"
     const hoje = new Date()
     hoje.setHours(0, 0, 0, 0)
     const amanha = new Date(hoje)
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!rota) {
-      // Colaborador existe, mas ainda não tem rota pra hoje
+      // Colaborador existe, só ainda não tem rota pra hoje
       return NextResponse.json(
         {
           ok: true,
@@ -80,7 +80,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const itens = rota.itens.map((item) => {
+    // 4. Montar itens da rota em formato amigável
+    const itens = (rota.itens || []).map((item) => {
       const amb = item.ambiente
 
       return {
@@ -102,13 +103,15 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // 5. Resposta final
     return NextResponse.json(
       {
         ok: true,
         rota: {
           id: rota.id,
-          data: rota.data.toISOString(),
-          periodo: rota.periodo ?? '',
+          // deixar o Date “cru”; o Next serializa para ISO
+          data: rota.data,
+          periodo: rota.periodo ?? null,
           obsGeral: rota.obsGeral ?? '',
           colab: {
             id: colab.id,
@@ -120,12 +123,14 @@ export async function GET(request: NextRequest) {
       },
       { status: 200 },
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro em /api/minha-rota', error)
     return NextResponse.json(
       {
         ok: false,
-        error: 'Erro interno ao carregar a rota de limpeza.',
+        error:
+          error?.message ||
+          'Erro interno ao carregar a rota de limpeza (detalhes não disponíveis).',
       },
       { status: 500 },
     )
