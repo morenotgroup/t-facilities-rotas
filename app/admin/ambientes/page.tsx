@@ -1,37 +1,31 @@
 // app/admin/ambientes/page.tsx
-import { prisma } from '@/lib/prisma'
-import { AmbientesAdmin } from './AmbientesAdmin'
+import Link from 'next/link'
 
-export default async function AmbientesPage() {
-  const ambientes = await prisma.ambiente.findMany({
-    orderBy: { nome: 'asc' },
-  })
-
-  const serializados = ambientes.map((a) => ({
-    id: a.id,
-    nome: a.nome,
-    andar: a.andar,
-    bloco: a.bloco,
-    tipo: a.tipo,
-    slugQr: a.slugQr,
-    frequenciaPadrao: a.frequenciaPadrao,
-    ativo: a.ativo,
-  }))
-
+export default function AdminAmbientesPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 p-4 pb-10 text-slate-50">
-      <header className="mb-4">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-amber-200">
-          Admin • Facilities
+    <div className="flex h-full flex-col gap-3 px-4 py-4 text-sm">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold text-slate-100">
+          Administração – Ambientes da casa
         </p>
-        <h1 className="text-xl font-semibold">Gestão de ambientes</h1>
-        <p className="text-[11px] text-slate-300">
-          Cadastre e ajuste os ambientes que entram nas rotas de limpeza e recebem
-          QR Code.
-        </p>
-      </header>
+        <Link href="/" className="text-[11px] text-amber-200 underline">
+          Voltar
+        </Link>
+      </div>
 
-      <AmbientesAdmin initialAmbientes={serializados} />
+      <p className="text-[11px] text-slate-200/80">
+        Nesta área, o líder de Facilities e o super admin vão cadastrar as salas e espaços
+        da sede do T Group.
+      </p>
+
+      <div className="mt-2 rounded-2xl border border-white/10 bg-white/5 p-3 text-xs text-slate-100/90">
+        Futuramente:
+        <ul className="mt-1 list-disc pl-4">
+          <li>Lista de todos os ambientes cadastrados;</li>
+          <li>Formulário para criar/editar um ambiente;</li>
+          <li>Slug para QR Code e foto de referência.</li>
+        </ul>
+      </div>
     </div>
   )
 }
