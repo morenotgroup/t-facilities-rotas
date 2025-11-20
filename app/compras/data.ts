@@ -26,7 +26,7 @@ export const pedidosFake: PedidoCompra[] = [
     id: 'ped-2',
     categoria: 'COZINHA',
     criadoPor: 'Adriana',
-    criadoEnISO: new Date().toISOString(),
+    criadoEmISO: new Date().toISOString(),
     status: 'EM_COMPRA',
     itens: [{ nome: 'Arroz 5kg', quantidade: '3 sacos', urgencia: 'Média' }],
   },
