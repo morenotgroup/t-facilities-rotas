@@ -3,20 +3,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// 🔧 Deixa claro pro Next que essa rota é SEMPRE dinâmica
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET(req: NextRequest) {
+  // 👉 Leitura da URL fora do try/catch, pra não capturar o DynamicServerError
+  const url = new URL(req.url)
+
+  const email = url.searchParams.get('email')
+  const dataStr = url.searchParams.get('data') // formato: 2025-11-20 (opcional)
+
+  if (!email) {
+    return NextResponse.json(
+      { error: 'Parâmetro "email" é obrigatório.' },
+      { status: 400 },
+    )
+  }
+
   try {
-    const url = new URL(req.url)
-
-    const email = url.searchParams.get('email')
-    const dataStr = url.searchParams.get('data') // formato: 2025-11-20 (opcional)
-
-    if (!email) {
-      return NextResponse.json(
-        { error: 'Parâmetro "email" é obrigatório.' },
-        { status: 400 },
-      )
-    }
-
     // 1. Buscar colaborador de Facilities ativo por e-mail
     const colaborador = await prisma.colaboradorFacility.findFirst({
       where: {
@@ -162,8 +167,12 @@ export async function GET(req: NextRequest) {
         })),
       },
     })
-  } catch (error) {
-    console.error('Erro em GET /api/gerar-rota', error)
+  } catch (error: any) {
+    // 🔇 Evita logar o erro interno do Next de detecção dinâmica
+    if (error?.digest !== 'DYNAMIC_SERVER_USAGE') {
+      console.error('Erro em GET /api/gerar-rota', error)
+    }
+
     return NextResponse.json(
       { error: 'Erro interno ao gerar rota.' },
       { status: 500 },
