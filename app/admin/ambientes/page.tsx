@@ -11,7 +11,6 @@ export default function AdminAmbientesPage() {
     user.role === 'LIDER_FACILITIES' || user.role === 'SUPER_ADMIN'
 
   const [ambientes, setAmbientes] = useState<Ambiente[]>(ambientesFake)
-  const [editingSlug, setEditingSlug] = useState<string | null>(null)
 
   // estados do form de novo ambiente
   const [nome, setNome] = useState('')
@@ -57,7 +56,11 @@ export default function AdminAmbientesPage() {
 
   const handleToggleAtivo = (id: string) => {
     setAmbientes((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, ativo: !a.ativo : !a.ativo } : a)),
+      prev.map((a) =>
+        a.id === id
+          ? { ...a, ativo: !a.ativo }
+          : a,
+      ),
     )
   }
 
