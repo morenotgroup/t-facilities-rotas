@@ -1,4 +1,5 @@
 // app/admin/ambientes/data.ts
+
 export type Ambiente = {
   id: string
   nome: string
@@ -8,6 +9,7 @@ export type Ambiente = {
   slug: string
   frequenciaPadrao?: string
   fotoUrl?: string
+  ativo: boolean
 }
 
 export const ambientesFake: Ambiente[] = [
@@ -19,6 +21,8 @@ export const ambientesFake: Ambiente[] = [
     tipo: 'Recepção',
     slug: 'recepcao-sede',
     frequenciaPadrao: '3x_dia',
+    fotoUrl: '',
+    ativo: true,
   },
   {
     id: 'amb-2',
@@ -28,5 +32,38 @@ export const ambientesFake: Ambiente[] = [
     tipo: 'Escritório',
     slug: 'sala-gc',
     frequenciaPadrao: '2x_dia',
+    fotoUrl: '',
+    ativo: true,
+  },
+  {
+    id: 'amb-3',
+    nome: 'Backyard 209',
+    andar: 'Fundos',
+    bloco: 'Sede',
+    tipo: 'Área externa',
+    slug: 'backyard-209',
+    frequenciaPadrao: '1x_dia',
+    fotoUrl: '',
+    ativo: true,
+  },
+  {
+    id: 'amb-4',
+    nome: 'Banheiro Social Térreo',
+    andar: 'Térreo',
+    bloco: 'Sede',
+    tipo: 'Banheiro',
+    slug: 'banheiro-social-terreo',
+    frequenciaPadrao: '3x_dia',
+    fotoUrl: '',
+    ativo: true,
   },
 ]
+
+export function gerarSlug(nome: string): string {
+  return nome
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '')
+}
